@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Daily Task Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background: #f4f4f4;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 40px 10px 100px;
+    }
+    h1 { margin-bottom: 20px; font-size: 20px; font-weight: 600; }
+    .task-list {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .task-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.4s ease;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .task-card:hover { transform: scale(1.02); }
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .task-left { display: flex; align-items: center; gap: 15px; flex: 1; }
+    .task-left input[type="checkbox"] { transform: scale(1.3); cursor: pointer; }
+    .task-text { font-size: 1.3rem; font-weight: 500; }
+    .task-text.completed { text-decoration: line-through; color: crimson; }
+    .time { font-size: 0.9rem; color: #888; white-space: nowrap; }
+    .task-desc {
+        max-height: 0;
+        overflow: hidden;
+        font-size: 0.95rem;
+        color: #555;
+        margin-top: 10px;
+        transition: max-height 0.6s ease-in-out;
+        line-height: 1.4;
+    }
+    .task-card.expand .task-desc { max-height: 250px; }
+
+    .popup-msg {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-size: 1rem;
+        opacity: 0;
+        transition: all 0.4s ease;
+        z-index: 999;
+    }
+    .popup-msg.show { opacity: 1; }
+
+    #addTaskBtn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 30px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Modal */
+    .modal {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 400px;
+    }
+    .modal-content h2 { margin-top: 0; font-size: 20px; }
+    .modal-content input, .modal-content textarea {
+        width: 95%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+    .time-inputs {
+        display: flex;
+        gap: 10px;
+    }
+    .modal-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    .modal-actions button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .save-btn { background: #28a745; color: #fff; }
+    .update-btn { background: #ffc107; color: #333; }
+    .remove-btn { background: #dc3545; color: #fff; }
+    .cancel-btn { background: #6c757d; color: #fff; }
+        .timer {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #666;
+    }
+
+    @media screen and (max-width: 600px) {
+      .task-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .time {
+        margin-top: 10px;
+      }
+    }
+</style>
+</head>
+<body>
+
+<h1>☕︎︎𝐘𝐎𝐔𝐑 𝐃𝐀𝐈𝐋𝐘 𝐒𝐂𝐇𝐄𝐃𝐔𝐋𝐄 ☁︎</h1>
+
+<div class="task-list" id="taskList"></div>
+<div class="popup-msg" id="popup"></div>
+<button id="addTaskBtn">+</button>
+<audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-click-error-1110.wav"></audio>
+<audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.wav"></audio>
+  <div class="timer" id="liveTimer">Current time: --:--:--</div>
+<div class="modal" id="taskModal">
+    <div class="modal-content">
+        <h2 id="modalTitle">Add Task</h2>
+        <input type="text" id="taskName" placeholder="ᴀᴅᴅ ᴛᴀꜱᴋ𓂃✍︎">
+        <div class="time-inputs">
+            <input type="time" id="startTime">
+            <input type="time" id="endTime" placeholder="Optional">
+        </div>
+        <textarea id="taskDesc" placeholder="✎ᝰ.Task Description✍︎" style="height:100px;"></textarea>
+        <div class="modal-actions">
+            <button class="save-btn" id="saveBtn">Save</button>
+            <button class="update-btn" id="updateBtn" style="display:none;">Update</button>
+            <button class="remove-btn" id="removeBtn" style="display:none;">Remove</button>
+            <button class="cancel-btn" id="cancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const taskList = document.getElementById('taskList');
+const popup = document.getElementById('popup');
+const addTaskBtn = document.getElementById('addTaskBtn');
+const modal = document.getElementById('taskModal');
+const modalTitle = document.getElementById('modalTitle');
+const saveBtn = document.getElementById('saveBtn');
+const updateBtn = document.getElementById('updateBtn');
+const removeBtn = document.getElementById('removeBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const nameInput = document.getElementById('taskName');
+const startInput = document.getElementById('startTime');
+const endInput = document.getElementById('endTime');
+const descInput = document.getElementById('taskDesc');
+const clickSound = document.getElementById('clickSound');
+const successSound = document.getElementById('successSound');
+
+const praiseMessages = [
+    "🌟 Excellent!", "🔥 Amazing!", "👍 Great Job!", "💪 Keep Going!",
+    "🎯 Nailed It!", "🏆 Fantastic!", "✨ Superb!", "👏 Wonderful!",
+    "🎉 Awesome!", "💥 Brilliant!"
+];
+
+let tasks = JSON.parse(localStorage.getItem('customTasks') || '[]');
+let editIndex = null;
+
+function saveToStorage() {
+    localStorage.setItem('customTasks', JSON.stringify(tasks));
+}
+
+function showPopup(msg) {
+    popup.textContent = msg;
+    popup.classList.add('show');
+    setTimeout(() => popup.classList.remove('show'), 2500);
+}
+
+function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach((t, i) => {
+        const card = document.createElement('div');
+        card.className = 'task-card';
+
+        const header = document.createElement('div');
+        header.className = 'task-header';
+
+        const left = document.createElement('div');
+        left.className = 'task-left';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = t.done || false;
+
+        const text = document.createElement('div');
+        text.className = 'task-text';
+        text.textContent = t.name;
+        if (checkbox.checked) text.classList.add('completed');
+
+        checkbox.addEventListener('change', (e) => {
+            e.stopPropagation();
+            if (checkbox.checked) {
+                text.classList.add('completed');
+                t.done = true;
+                const msg = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
+                showPopup(msg);
+                successSound.play();
+            } else {
+                text.classList.remove('completed');
+                t.done = false;
+            }
+            saveToStorage();
+        });
+
+        left.appendChild(checkbox);
+        left.appendChild(text);
+
+        const time = document.createElement('div');
+        time.className = 'time';
+        time.textContent = t.end ? `${formatTime(t.start)} - ${formatTime(t.end)}` : formatTime(t.start);
+        function formatTime(time) {
+    if (!time) return '';
+    let [hour, minute] = time.split(':');
+    hour = parseInt(hour);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12; // 12-hour format
+    return `${hour}:${minute} ${ampm}`;
+}
+
+        header.appendChild(left);
+        header.appendChild(time);
+
+        const desc = document.createElement('div');
+        desc.className = 'task-desc';
+        desc.textContent = t.desc;
+
+        card.appendChild(header);
+        card.appendChild(desc);
+
+        card.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT') {
+                card.classList.toggle('expand');
+            }
+        });
+
+        card.addEventListener('dblclick', () => {
+            openModal('edit', i);
+        });
+
+        taskList.appendChild(card);
+    });
+}
+
+function openModal(mode, index=null) {
+    modal.style.display = 'flex';
+    if (mode === 'add') {
+        modalTitle.textContent = 'Add Task';
+        saveBtn.style.display = 'inline-block';
+        updateBtn.style.display = 'none';
+        removeBtn.style.display = 'none';
+        nameInput.value = '';
+        startInput.value = '';
+        endInput.value = '';
+        descInput.value = '';
+    } else {
+        modalTitle.textContent = 'Edit Task';
+        saveBtn.style.display = 'none';
+        updateBtn.style.display = 'inline-block';
+        removeBtn.style.display = 'inline-block';
+        const t = tasks[index];
+        nameInput.value = t.name;
+        startInput.value = t.start;
+        endInput.value = t.end || '';
+        descInput.value = t.desc;
+        editIndex = index;
+    }
+}
+
+addTaskBtn.addEventListener('click', () => { clickSound.play(); openModal('add'); });
+cancelBtn.addEventListener('click', () => modal.style.display = 'none');
+
+saveBtn.addEventListener('click', () => {
+    const name = '➪' + nameInput.value.trim();
+    const start = startInput.value.trim();
+    const end = endInput.value.trim();
+    const desc = descInput.value.trim();
+    if (!name || !start) { showPopup('Please fill Task Name & Start Time'); return; }
+    tasks.push({name, start, end, desc, done: false});
+    saveToStorage();
+    renderTasks();
+    modal.style.display = 'none';
+    successSound.play();
+    showPopup('✎Task Added');
+});
+
+updateBtn.addEventListener('click', () => {
+    tasks[editIndex].name = '➪' + nameInput.value.trim();
+    tasks[editIndex].start = startInput.value.trim();
+    tasks[editIndex].end = endInput.value.trim();
+    tasks[editIndex].desc = descInput.value.trim();
+    saveToStorage();
+    renderTasks();
+    modal.style.display = 'none';
+    successSound.play();
+    showPopup('➟Task Updated');
+});
+
+removeBtn.addEventListener('click', () => {
+    tasks.splice(editIndex, 1);
+    saveToStorage();
+    renderTasks();
+    modal.style.display = 'none';
+    clickSound.play();
+    showPopup('✄Task Removed');
+});
+
+window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; }
+
+// Reset tasks at midnight
+setInterval(() => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+        tasks.forEach(t => t.done = false);
+        saveToStorage();
+        renderTasks();
+        showPopup('New Day - Tasks Reset');
+    }
+}, 60000);
+
+renderTasks();
+    function updateTime() {
+      const now = new Date();
+      document.getElementById("liveTimer").textContent =
+        "⏱ᴄᴜʀʀᴇɴᴛ ᴛɪᴍᴇᯓ " + now.toLocaleTimeString();
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
+</script>
+</body>
+</html>
