@@ -36,13 +36,13 @@ function showPopup(msg) {
 }
 // Reorder tasks: incomplete first, complete last, then by start time
 tasks.sort((a, b) => {
-    // First: incomplete on top
-    if (a.done !== b.done) return a.done - b.done;
+  // First: incomplete on top
+  if (a.done !== b.done) return a.done - b.done;
 
-    // Then: sort by start time
-    const timeA = a.start ? a.start : '99:99'; // agar start time missing ho to last me
-    const timeB = b.start ? b.start : '99:99';
-    return timeA.localeCompare(timeB);
+  // Then: sort by start time
+  const timeA = a.start ? a.start : '99:99'; // agar start time missing ho to last me
+  const timeB = b.start ? b.start : '99:99';
+  return timeA.localeCompare(timeB);
 });
 function renderTasks() {
   taskList.innerHTML = '';
@@ -71,27 +71,27 @@ function renderTasks() {
     text.textContent = t.name;
     if (checkbox.checked) text.classList.add('completed');
 
-checkbox.addEventListener('change', (e) => {
-    e.stopPropagation();
+    checkbox.addEventListener('change', (e) => {
+      e.stopPropagation();
 
-    // Update done status
-    t.done = checkbox.checked;
+      // Update done status
+      t.done = checkbox.checked;
 
-    if (checkbox.checked) {
+      if (checkbox.checked) {
         text.classList.add('completed');
         const msg = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
         showPopup(msg);
         successSound.play();
-    } else {
+      } else {
         text.classList.remove('completed');
-    }
+      }
 
-    // Reorder tasks: incomplete on top, complete at bottom
-    tasks.sort((a, b) => a.done - b.done);
+      // Reorder tasks: incomplete on top, complete at bottom
+      tasks.sort((a, b) => a.done - b.done);
 
-    saveToStorage();
-    renderTasks();
-});
+      saveToStorage();
+      renderTasks();
+    });
 
     left.appendChild(checkbox);
     left.appendChild(text);
@@ -133,7 +133,7 @@ function formatTime(time) {
   return `${hour}:${minute} ${ampm}`;
 }
 
-function openModal(mode, index=null) {
+function openModal(mode, index = null) {
   modal.style.display = 'flex';
   if (mode === 'add') {
     modalTitle.textContent = 'Add Task';
@@ -158,10 +158,10 @@ function openModal(mode, index=null) {
   }
 }
 
-addTaskBtn.addEventListener('click', () => { 
-  clickSound.play(); 
-  openModal('add'); 
-  showPopup("Add Task"); 
+addTaskBtn.addEventListener('click', () => {
+  clickSound.play();
+  openModal('add');
+  showPopup("Add Task");
 });
 cancelBtn.addEventListener('click', () => modal.style.display = 'none');
 
@@ -172,12 +172,12 @@ saveBtn.addEventListener('click', () => {
   const end = endInput.value.trim();
   const desc = descInput.value.trim();
 
-  if (!taskName || !start) { 
-      showPopup('Please fill Task Name & Start Time'); 
-      return; 
+  if (!taskName || !start) {
+    showPopup('Please fill Task Name & Start Time');
+    return;
   }
 
-  tasks.push({name: taskName, start, end, desc, done: false});
+  tasks.push({ name: taskName, start, end, desc, done: false });
   saveToStorage();
   renderTasks();
   modal.style.display = 'none';
@@ -192,9 +192,9 @@ updateBtn.addEventListener('click', () => {
   const end = endInput.value.trim();
   const desc = descInput.value.trim();
 
-  if (!updatedName || !start) { 
-      showPopup('Please fill Task Name & Start Time'); 
-      return; 
+  if (!updatedName || !start) {
+    showPopup('Please fill Task Name & Start Time');
+    return;
   }
 
   tasks[editIndex].name = updatedName;
